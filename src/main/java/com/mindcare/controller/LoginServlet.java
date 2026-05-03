@@ -40,10 +40,11 @@ public class LoginServlet extends HttpServlet {
 
             HttpSession session = req.getSession();
             session.setAttribute("user", user);
+            session.setAttribute("role", user.getRole());
 
             switch (user.getRole()) {
                 case "ADMIN":
-                    resp.sendRedirect("admin-dashboard");
+                    resp.sendRedirect(req.getContextPath() + "admin-dashboard");
                     break;
                 case "COUNSELLOR":
                     resp.sendRedirect("counsellor-dashboard");
