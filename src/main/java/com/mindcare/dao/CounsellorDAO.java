@@ -34,12 +34,31 @@ public class CounsellorDAO {
     }
 
     // Get availabilities
-    public List<Availability> getAvailabilities(int counsellorId) {
+    public List<Availability> getAvailabilities(int counsellorId, String fromDate, String toDate) {
         List<Availability> list = new ArrayList<>();
-        String sql = "SELECT * FROM availabilities WHERE counsellor_id = ? ORDER BY available_date ASC, start_time ASC";
+        StringBuilder sql = new StringBuilder("SELECT * FROM availabilities WHERE counsellor_id = ?");
+        
+        if (fromDate != null && !fromDate.trim().isEmpty()) {
+            sql.append(" AND available_date >= ?");
+        }
+        if (toDate != null && !toDate.trim().isEmpty()) {
+            sql.append(" AND available_date <= ?");
+        }
+        sql.append(" ORDER BY available_date ASC, start_time ASC");
+        
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, counsellorId);
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            
+            int paramIndex = 1;
+            stmt.setInt(paramIndex++, counsellorId);
+            
+            if (fromDate != null && !fromDate.trim().isEmpty()) {
+                stmt.setDate(paramIndex++, Date.valueOf(fromDate));
+            }
+            if (toDate != null && !toDate.trim().isEmpty()) {
+                stmt.setDate(paramIndex++, Date.valueOf(toDate));
+            }
+            
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 Availability a = new Availability();
@@ -54,6 +73,24 @@ public class CounsellorDAO {
             e.printStackTrace();
         }
         return list;
+    }
+
+    public List<Availability> getAvailabilities(int counsellorId) {
+        return getAvailabilities(counsellorId, null, null);
+    }
+
+    // Delete Availability
+    public boolean deleteAvailability(int id, int counsellorId) {
+        String sql = "DELETE FROM availabilities WHERE id = ? AND counsellor_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.setInt(2, counsellorId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     // Get Upcoming Appointments for a Counsellor

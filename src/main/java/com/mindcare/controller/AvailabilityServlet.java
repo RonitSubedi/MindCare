@@ -29,7 +29,9 @@ public class AvailabilityServlet extends HttpServlet {
         if (session != null && session.getAttribute("user") != null) {
             User user = (User) session.getAttribute("user");
             if ("COUNSELLOR".equals(user.getRole())) {
-                List<Availability> availabilities = counsellorDAO.getAvailabilities(user.getId());
+                String fromDate = request.getParameter("fromDate");
+                String toDate = request.getParameter("toDate");
+                List<Availability> availabilities = counsellorDAO.getAvailabilities(user.getId(), fromDate, toDate);
                 request.setAttribute("availabilities", availabilities);
             }
         }
@@ -51,16 +53,35 @@ public class AvailabilityServlet extends HttpServlet {
         }
 
         int counsellorId = user.getId();
-        String availableDate = request.getParameter("availableDate");
-        String startTime = request.getParameter("startTime");
-        String endTime = request.getParameter("endTime");
+        String action = request.getParameter("action");
 
-        boolean isSaved = counsellorDAO.saveAvailability(counsellorId, availableDate, startTime, endTime);
-
-        if (isSaved) {
-            request.setAttribute("successMessage", "Availability saved successfully!");
+        if ("delete".equals(action)) {
+            String idParam = request.getParameter("id");
+            if (idParam != null && !idParam.isEmpty()) {
+                try {
+                    int id = Integer.parseInt(idParam);
+                    boolean isDeleted = counsellorDAO.deleteAvailability(id, counsellorId);
+                    if (isDeleted) {
+                        request.setAttribute("successMessage", "Availability deleted successfully!");
+                    } else {
+                        request.setAttribute("errorMessage", "Failed to delete availability.");
+                    }
+                } catch (NumberFormatException e) {
+                    request.setAttribute("errorMessage", "Invalid availability ID.");
+                }
+            }
         } else {
-            request.setAttribute("errorMessage", "Failed to save availability. Please try again.");
+            String availableDate = request.getParameter("availableDate");
+            String startTime = request.getParameter("startTime");
+            String endTime = request.getParameter("endTime");
+
+            boolean isSaved = counsellorDAO.saveAvailability(counsellorId, availableDate, startTime, endTime);
+
+            if (isSaved) {
+                request.setAttribute("successMessage", "Availability saved successfully!");
+            } else {
+                request.setAttribute("errorMessage", "Failed to save availability. Please try again.");
+            }
         }
         
         List<Availability> availabilities = counsellorDAO.getAvailabilities(counsellorId);
